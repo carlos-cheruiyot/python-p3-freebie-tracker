@@ -6,28 +6,37 @@ from sqlalchemy.orm import sessionmaker
 from models import Base, Company, Dev, Freebie
 
 engine = create_engine('sqlite:///freebies.db')
-Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-# Create company and devs if none exist
-if not session.query(Company).first():
-    c = Company(name="Google", founding_year=1998)
-    d = Dev(name="Alice")
-    session.add_all([c, d])
-    session.commit()
+# Create tables (if not already created)
+Base.metadata.create_all(engine)
 
-    f = c.give_freebie(d, "Sticker", 1)
-    session.add(f)
-    session.commit()
+# Clear existing data
+session.query(Freebie).delete()
+session.query(Dev).delete()
+session.query(Company).delete()
+session.commit()
 
-# Testing
-dev = session.query(Dev).first()
-print(dev.companies)                 # list of companies
-print(dev.received_one("Sticker"))  # True
-print(dev.freebies[0].print_details())
+# Create some companies
+google = Company(name="Google", founding_year=1998)
+apple = Company(name="Apple", founding_year=1976)
 
-oldest = Company.oldest_company(session)
-print(f"Oldest company: {oldest.name}")
+# Create some devs
+alice = Dev(name="Alice")
+bob = Dev(name="Bob")
+
+session.add_all([google, apple, alice, bob])
+session.commit()
+
+# Give freebies
+freebie1 = google.give_freebie(alice, "Sticker", 1)
+freebie2 = apple.give_freebie(bob, "T-Shirt", 20)
+freebie3 = google.give_freebie(bob, "Mug", 10)
+
+session.add_all([freebie1, freebie2, freebie3])
+session.commit()
+
+print("Seed data inserted!")
 
 session.close()
